@@ -1,5 +1,5 @@
 import { InvalidRequestError } from '@atproto/xrpc-server'
-import { Server } from '../lexicon'
+import { Server } from '../../gen/lexicon'
 import { AppContext } from '../config'
 import algos from '../algos'
 import { validateAuth } from '../auth'

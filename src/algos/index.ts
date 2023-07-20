@@ -2,7 +2,7 @@ import { AppContext } from '../config'
 import {
   QueryParams,
   OutputSchema as AlgoOutput,
-} from '../lexicon/types/app/bsky/feed/getFeedSkeleton'
+} from '../../gen/lexicon/types/app/bsky/feed/getFeedSkeleton'
 import * as whatsAlf from './whats-alf'
 
 type AlgoHandler = (ctx: AppContext, params: QueryParams) => Promise<AlgoOutput>
