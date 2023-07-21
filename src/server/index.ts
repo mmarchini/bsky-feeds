@@ -1,5 +1,5 @@
 import FeedGenerator from './server'
-import { loadConfig } from './config'
+import { loadConfig } from '../config'
 
 const run = async () => {
   const server = FeedGenerator.create(loadConfig())
@@ -8,6 +8,5 @@ const run = async () => {
     `🤖 running feed generator at http://${server.cfg.listenhost}:${server.cfg.port}`,
   )
 }
-
 
 run()

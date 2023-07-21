@@ -1,9 +1,8 @@
 import {
   OutputSchema as RepoEvent,
   isCommit,
-} from '../gen/lexicon/types/com/atproto/sync/subscribeRepos'
-import { FirehoseSubscriptionBase, getOpsByType } from './util/subscription'
-import { UpdateResult } from 'kysely'
+} from '../../gen/lexicon/types/com/atproto/sync/subscribeRepos'
+import { FirehoseSubscriptionBase, getOpsByType } from '../util/subscription'
 
 export class FirehoseSubscription extends FirehoseSubscriptionBase {
   async deletePosts(posts) {
@@ -75,44 +74,6 @@ export class FirehoseSubscription extends FirehoseSubscriptionBase {
     }
 
   }
-
-  // async updateLikes(likes) {
-  //   const likeChangesPerUri = {}
-  //   for (const createdLike of likes.creates) {
-  //     const uri = createdLike.record.subject.uri;
-  //     likeChangesPerUri[uri] = (likeChangesPerUri[uri] || 0) + 1;
-  //   }
-
-  //   for (const deletedLikes of likes.deletes) {
-  //     console.log(deletedLikes)
-  //     const uri = deletedLikes.record.subject.uri;
-  //     likeChangesPerUri[uri] = (likeChangesPerUri[uri] || 0) - 1;
-  //   }
-
-  //   const promises: Promise<UpdateResult[]>[] = []
-  //   // this is garbage, should keep a cache of known URIs for the feed time
-  //   // period instead
-  //   for (const uri of Object.keys(likeChangesPerUri)) {
-  //     if (!this.cache.includes(uri)) {
-  //       continue
-  //     }
-  //     console.log('found some likes')
-  //     const numLikes = likeChangesPerUri[uri]
-  //     if (numLikes === 0) {
-  //       continue
-  //     }
-  //     const sign = numLikes > 0 ? '+' : '-';
-
-  //     this.db.insertInto('like').values
-
-  //     promises.push(this.db
-  //       .updateTable('post')
-  //       .set((eb) => ({ 'likes': eb('likes', sign, Math.abs(numLikes)) }))
-  //       .where('uri', '=', uri)
-  //       .execute())
-  //   }
-  //   await Promise.all(promises)
-  // }
 
   async handleEvent(evt: RepoEvent) {
     if (!isCommit(evt)) return
