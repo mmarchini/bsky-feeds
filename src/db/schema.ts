@@ -1,5 +1,6 @@
 export type DatabaseSchema = {
   post: Post
+  like: Like
   sub_state: SubState
 }
 
@@ -9,6 +10,13 @@ export type Post = {
   replyParent: string | null
   replyRoot: string | null
   indexedAt: string
+  author: string
+}
+
+export type Like = {
+  uri: string
+  post: string
+
 }
 
 export type SubState = {
