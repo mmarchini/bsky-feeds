@@ -31,14 +31,16 @@ async function publish(agent: AtpAgent, { recordName, displayName, description, 
     } else {
       throw new Error('expected png or jpeg')
     }
-    console.log('Uploading avatar')
     const img = await fs.readFile(avatar)
+    console.log('Uploading avatar')
     const blobRes = await agent.api.com.atproto.repo.uploadBlob(img, {
       encoding,
     })
+    console.log('Avatar uploaded')
     avatarRef = blobRes.data.blob
   }
 
+  console.log(`Sending ${recordName}`)
   await agent.api.com.atproto.repo.putRecord({
     repo: agent.session?.did ?? '',
     collection: ids.AppBskyFeedGenerator,

@@ -24,7 +24,7 @@ function loadAvailableAlgos() {
     if (file.isDirectory()) {
       const algoPath = path.join(ALGOS_PATH, file.name)
       const { recordName, displayName, description } = require(path.join(algoPath, 'config.json'))
-      let avatar: string | null= path.join(algoPath, 'avatar.png')
+      let avatar: string | null= path.join(algoPath, 'avatar.jpg')
       if (!fs.existsSync(avatar)) {
         avatar = null
       }
