@@ -1,50 +1,18 @@
 import dotenv from 'dotenv'
 import { AtpAgent, BlobRef } from '@atproto/api'
 import fs from 'fs/promises'
-import { ids } from '../src/lexicon/lexicons'
+// import { parseArgs } from 'node:util'
+import { ids } from '../gen/lexicon/lexicons'
+import { loadConfig } from '../src/config'
 
-const run = async () => {
-  dotenv.config()
-
-  // YOUR bluesky handle
-  // Ex: user.bsky.social
-  const handle = ''
-
-  // YOUR bluesky password, or preferably an App Password (found in your client settings)
-  // Ex: abcd-1234-efgh-5678
-  const password = ''
-
-  // A short name for the record that will show in urls
-  // Lowercase with no spaces.
-  // Ex: whats-hot
-  const recordName = ''
-
-  // A display name for your feed
-  // Ex: What's Hot
-  const displayName = ''
-
-  // (Optional) A description of your feed
-  // Ex: Top trending content from the whole network
-  const description = ''
-
-  // (Optional) The path to an image to be used as your feed's avatar
-  // Ex: ~/path/to/avatar.jpeg
-  const avatar: string = ''
-
-  // -------------------------------------
-  // NO NEED TO TOUCH ANYTHING BELOW HERE
-  // -------------------------------------
-
-  if (!process.env.FEEDGEN_SERVICE_DID && !process.env.FEEDGEN_HOSTNAME) {
-    throw new Error('Please provide a hostname in the .env file')
-  }
-  const feedGenDid =
-    process.env.FEEDGEN_SERVICE_DID ?? `did:web:${process.env.FEEDGEN_HOSTNAME}`
-
-  // only update this if in a test environment
-  const agent = new AtpAgent({ service: 'https://bsky.social' })
+async function agentLogin({ feedGen: { service, handle, password }}) {
+  const agent = new AtpAgent({ service })
   await agent.login({ identifier: handle, password })
 
+  return agent
+}
+
+async function publish(agent: AtpAgent, { recordName, displayName, description, avatar }, { serviceDid }) {
   try {
     await agent.api.app.bsky.feed.describeFeedGenerator()
   } catch (err) {
@@ -63,6 +31,7 @@ const run = async () => {
     } else {
       throw new Error('expected png or jpeg')
     }
+    console.log('Uploading avatar')
     const img = await fs.readFile(avatar)
     const blobRes = await agent.api.com.atproto.repo.uploadBlob(img, {
       encoding,
@@ -75,14 +44,49 @@ const run = async () => {
     collection: ids.AppBskyFeedGenerator,
     rkey: recordName,
     record: {
-      did: feedGenDid,
+      did: serviceDid,
       displayName: displayName,
       description: description,
       avatar: avatarRef,
       createdAt: new Date().toISOString(),
     },
   })
+}
 
+async function unpublish(agent: AtpAgent, { recordName }) {
+  console.log(`Deleting ${recordName}`)
+  await agent.api.com.atproto.repo.deleteRecord({
+    repo: agent.session?.did ?? '',
+    collection: ids.AppBskyFeedGenerator,
+    rkey: recordName,
+  })
+}
+
+const commands = {
+  publish,
+  unpublish
+}
+
+const run = async () => {
+  dotenv.config()
+
+  const command = process.argv[2]
+  if (!Object.keys(commands).includes(command)) {
+    console.error(`unknown command ${command}`)
+    process.exit(1)
+  }
+
+  const algo = process.argv[3]
+  const config = loadConfig()
+
+  if (!Object.keys(config.algos).includes(algo)) {
+    console.error(`unknown algorithm ${algo}`)
+    process.exit(1)
+  }
+
+  console.log(`Running ${command} for ${algo}`)
+  const agent = await agentLogin(config)
+  await commands[command](agent, config.algos[algo], config)
   console.log('All done 🎉')
 }
 

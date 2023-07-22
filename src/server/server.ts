@@ -1,6 +1,8 @@
 import http from 'http'
 import events from 'events'
 import express from 'express'
+import type { Logger } from 'pino'
+import pinoHttp from 'pino-http'
 import { DidResolver, MemoryCache } from '@atproto/did-resolver'
 import { createServer } from '../../gen/lexicon'
 import feedGeneration from './../methods/feed-generation'
@@ -25,7 +27,7 @@ export class FeedGenerator {
     this.cfg = cfg
   }
 
-  static create(cfg: Config) {
+  static create(cfg: Config, logger: Logger) {
     const app = express()
     const db = createDb(cfg.sqliteLocation)
 
@@ -50,6 +52,7 @@ export class FeedGenerator {
     }
     feedGeneration(server, ctx)
     describeGenerator(server, ctx)
+    app.use(pinoHttp({ logger }))
     app.use(server.xrpc.router)
     app.use(wellKnown(ctx))
 

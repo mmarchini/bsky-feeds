@@ -5,6 +5,7 @@ import { migrationProvider } from './migrations'
 
 export const createDb = (location: string): Database => {
   return new Kysely<DatabaseSchema>({
+    // log: ['query'],
     dialect: new SqliteDialect({
       database: new SqliteDb(location),
     }),

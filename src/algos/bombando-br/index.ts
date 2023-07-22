@@ -1,16 +1,23 @@
 import { InvalidRequestError } from '@atproto/xrpc-server'
-import { QueryParams } from '../../gen/lexicon/types/app/bsky/feed/getFeedSkeleton'
-import { AppContext } from '../config'
+import { QueryParams } from '../../../gen/lexicon/types/app/bsky/feed/getFeedSkeleton'
+import { AppContext } from '../../config'
 
 // max 15 chars
-export const shortname = 'whats-alf'
+export const shortname = 'bombando-br'
 
 export const handler = async (ctx: AppContext, params: QueryParams) => {
   let builder = ctx.db
-    .selectFrom('post')
+    .selectFrom((eb) => eb
+      .selectFrom('post')
+      .innerJoin('like', 'post.uri', 'like.post')
+      .select(['post.uri as uri', 'post.cid as cid', 'post.indexedAt as indexedAt', (b) => b.fn.count('like.uri').as('likes')])
+      .groupBy('post.uri')
+      .orderBy('indexedAt', 'desc')
+      .orderBy('likes', 'desc')
+      .as('post')
+      )
     .selectAll()
-    .orderBy('indexedAt', 'desc')
-    .orderBy('cid', 'desc')
+    .where('post.likes', '>=', 12)
     .limit(params.limit)
 
   if (params.cursor) {
@@ -22,7 +29,7 @@ export const handler = async (ctx: AppContext, params: QueryParams) => {
     builder = builder
       .where('post.indexedAt', '<', timeStr)
       // .orWhere((qb) => qb.where('post.indexedAt', '=', timeStr))
-      .where('post.cid', '<', cid)
+      // .where('post.cid', '<', cid)
   }
   const res = await builder.execute()
 
