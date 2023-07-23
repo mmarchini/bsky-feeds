@@ -59,7 +59,14 @@ export function loadConfig() {
   return {
     port: maybeInt(process.env.FEEDGEN_PORT) ?? 3000,
     listenhost: maybeStr(process.env.FEEDGEN_LISTENHOST) ?? 'localhost',
-    sqliteLocation: maybeStr(process.env.FEEDGEN_SQLITE_LOCATION) ?? ':memory:',
+    database: {
+      name: maybeStr(process.env.FEEDGEN_DATABASE_NAME) ?? 'bsky-firehose',
+      host: maybeStr(process.env.FEEDGEN_DATABASE_HOST) ?? 'localhost',
+      user: maybeStr(process.env.FEEDGEN_DATABASE_USER) ?? 'postgres',
+      password: maybeStr(process.env.FEEDGEN_DATABASE_PASSWORD) ?? 'postgres',
+      port: maybeInt(process.env.FEEDGEN_DATABASE_PORT) ?? 5432,
+      max: maybeInt(process.env.FEEDGEN_DATABASE_MAX) ?? 10
+    },
     subscriptionEndpoint:
       maybeStr(process.env.FEEDGEN_SUBSCRIPTION_ENDPOINT) ??
       'wss://bsky.social',
@@ -95,7 +102,14 @@ export type Config = {
   port: number
   listenhost: string
   hostname: string
-  sqliteLocation: string
+  database: {
+    name: string
+    host: string
+    user: string
+    password: string
+    port: number
+    max: number
+  }
   subscriptionEndpoint: string
   serviceDid: string
   publisherDid: string

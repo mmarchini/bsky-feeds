@@ -29,7 +29,7 @@ export class FeedGenerator {
 
   static create(cfg: Config, logger: Logger) {
     const app = express()
-    const db = createDb(cfg.sqliteLocation)
+    const db = createDb(cfg)
 
     const didCache = new MemoryCache()
     const didResolver = new DidResolver(

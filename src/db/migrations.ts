@@ -67,3 +67,18 @@ migrations['003'] = {
     await db.schema.dropTable('like').execute()
   },
 }
+
+migrations['004'] = {
+  async up(db: Kysely<unknown>) {
+    await db.schema
+      .alterTable('post')
+      .dropColumn('indexedAt')
+      .execute()
+
+    await db.schema
+      .alterTable('post')
+      .addColumn('indexedAt', 'timestamp', (col) => col.defaultTo(new Date()))
+      .addColumn('createdAt', 'timestamp', (col) => col.notNull())
+      .execute()
+  }
+}

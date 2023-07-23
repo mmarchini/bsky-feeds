@@ -12,6 +12,8 @@ export class FirehoseSubscription extends FirehoseSubscriptionBase {
         .deleteFrom('post')
         .where('uri', 'in', postsToDelete)
         .execute()
+      this.log.info('deleted posts', { postCount: postsToDelete.length })
+      this.log.debug({ postsToDelete })
     }
   }
 
@@ -33,17 +35,18 @@ export class FirehoseSubscription extends FirehoseSubscriptionBase {
           cid: create.cid,
           replyParent: create.record?.reply?.parent.uri ?? null,
           replyRoot: create.record?.reply?.root.uri ?? null,
-          indexedAt: new Date().toISOString()
+          createdAt: new Date(create.record?.createdAt)
         }
       })
 
     if (postsToCreate.length > 0) {
-      console.log('created some stuff')
       await this.db
         .insertInto('post')
         .values(postsToCreate)
         .onConflict((oc) => oc.doNothing())
         .execute()
+      this.log.info('created posts', { postCount: postsToCreate.length })
+      this.log.debug({ postsToCreate })
     }
   }
 
@@ -54,25 +57,32 @@ export class FirehoseSubscription extends FirehoseSubscriptionBase {
         .deleteFrom('like')
         .where('uri', 'in', likesToDelete)
         .execute()
+      this.log.info('deleted likes', { likeCount: likesToDelete.length })
+      this.log.debug({ likesToDelete })
     }
   }
 
   async createLikes(likes) {
-    // const likesToCreate = likes.creates
-    //   .map(({ uri, record }) => ())
-
+    let inserted: any[] = [];
     for (const { uri, record } of likes.creates) {
       const row = { uri, post: record.subject.uri };
 
-      await this.db
+      const result = await this.db
         .insertInto('like')
         .columns(['uri', 'post'])
         .expression((eb) =>
           eb.selectFrom('post').select((eb) => [eb.val(uri).as('uri'), 'uri as post']).where('uri', '=', row.post)
         )
+        .onConflict((oc) => oc.doNothing())
         .execute()
+      if (result?.length) {
+        inserted.push({ uri, record })
+      }
     }
-
+    if (inserted) {
+      this.log.debug('created likes', { likeCount: inserted.length })
+      this.log.debug({ likes })
+    }
   }
 
   async handleEvent(evt: RepoEvent) {

@@ -6,8 +6,8 @@ const run = async () => {
   const logger = createLogger()
   const server = FeedGenerator.create(loadConfig(), logger)
   await server.start()
-  console.log(
-    `🤖 running feed generator at http://${server.cfg.listenhost}:${server.cfg.port}`,
+  logger.info(
+    `running feed generator at http://${server.cfg.listenhost}:${server.cfg.port}`,
   )
 }
 

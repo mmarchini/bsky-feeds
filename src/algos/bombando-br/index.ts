@@ -10,9 +10,9 @@ export const handler = async (ctx: AppContext, params: QueryParams) => {
     .selectFrom((eb) => eb
       .selectFrom('post')
       .innerJoin('like', 'post.uri', 'like.post')
-      .select(['post.uri as uri', 'post.cid as cid', 'post.indexedAt as indexedAt', (b) => b.fn.count('like.uri').as('likes')])
+      .select(['post.uri as uri', 'post.cid as cid', 'post.createdAt as createdAt', (b) => b.fn.count('like.uri').as('likes')])
       .groupBy('post.uri')
-      .orderBy('indexedAt', 'desc')
+      .orderBy('createdAt', 'desc')
       .orderBy('likes', 'desc')
       .as('post')
       )
@@ -21,13 +21,13 @@ export const handler = async (ctx: AppContext, params: QueryParams) => {
     .limit(params.limit)
 
   if (params.cursor) {
-    const [indexedAt, cid] = params.cursor.split('::')
-    if (!indexedAt || !cid) {
+    const [createdAt, cid] = params.cursor.split('::')
+    if (!createdAt || !cid) {
       throw new InvalidRequestError('malformed cursor')
     }
-    const timeStr = new Date(parseInt(indexedAt, 10)).toISOString()
+    const timeStr = new Date(parseInt(createdAt, 10))
     builder = builder
-      .where('post.indexedAt', '<', timeStr)
+      .where('post.createdAt', '<', timeStr)
       // .orWhere((qb) => qb.where('post.indexedAt', '=', timeStr))
       // .where('post.cid', '<', cid)
   }
@@ -40,7 +40,7 @@ export const handler = async (ctx: AppContext, params: QueryParams) => {
   let cursor: string | undefined
   const last = res.at(-1)
   if (last) {
-    cursor = `${new Date(last.indexedAt).getTime()}::${last.cid}`
+    cursor = `${last.createdAt.getTime()}::${last.cid}`
   }
 
   return {

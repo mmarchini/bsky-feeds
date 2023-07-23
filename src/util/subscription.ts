@@ -1,6 +1,7 @@
 import { Subscription } from '@atproto/xrpc-server'
 import { cborToLexRecord, readCar } from '@atproto/repo'
 import { BlobRef } from '@atproto/lexicon'
+import { Logger } from 'pino'
 import { ids, lexicons } from '../../gen/lexicon/lexicons'
 import { Record as PostRecord } from '../../gen/lexicon/types/app/bsky/feed/post'
 import { Record as RepostRecord } from '../../gen/lexicon/types/app/bsky/feed/repost'
@@ -16,7 +17,7 @@ import { Database } from '../db'
 export abstract class FirehoseSubscriptionBase {
   public sub: Subscription<RepoEvent>
 
-  constructor(public db: Database, public service: string) {
+  constructor(public db: Database, public service: string, public log: Logger) {
     this.sub = new Subscription({
       service: service,
       method: ids.ComAtprotoSyncSubscribeRepos,
@@ -28,7 +29,7 @@ export abstract class FirehoseSubscriptionBase {
             value,
           )
         } catch (err) {
-          console.error('repo subscription skipped invalid message', err)
+          this.log.error('repo subscription skipped invalid message', err)
         }
       },
     })
@@ -42,7 +43,7 @@ export abstract class FirehoseSubscriptionBase {
         try {
           await this.handleEvent(evt)
         } catch (err) {
-          console.error('repo subscription could not handle message', err)
+          this.log.error('repo subscription could not handle message', err)
         }
         // update stored cursor every 20 events or so
         if (isCommit(evt) && evt.seq % 20 === 0) {
@@ -50,7 +51,7 @@ export abstract class FirehoseSubscriptionBase {
         }
       }
     } catch (err) {
-      console.error('repo subscription errored', err)
+      this.log.error('repo subscription errored', err)
       setTimeout(() => this.run(subscriptionReconnectDelay), subscriptionReconnectDelay)
     }
   }
@@ -64,12 +65,28 @@ export abstract class FirehoseSubscriptionBase {
   }
 
   async getCursor(): Promise<{ cursor?: number }> {
+    let cursor: number | undefined
     const res = await this.db
       .selectFrom('sub_state')
       .selectAll()
       .where('service', '=', this.service)
       .executeTakeFirst()
-    return res ? { cursor: res.cursor } : {}
+    if (!res) {
+      this.log.info('cursor not found, backfilling firehose from oldest record')
+      const inserted = await this.db
+        .insertInto('sub_state')
+        .values([{
+          'service': this.service,
+          'cursor': 0
+        }])
+        .executeTakeFirst()
+      if (inserted.numInsertedOrUpdatedRows) {
+        cursor = 0
+      }
+    } else {
+      cursor = res.cursor
+    }
+    return { cursor };
   }
 }
 

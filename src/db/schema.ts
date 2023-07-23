@@ -9,7 +9,8 @@ export type Post = {
   cid: string
   replyParent: string | null
   replyRoot: string | null
-  indexedAt: string
+  createdAt: Date
+  indexedAt: Date
   author: string
 }
 
